@@ -351,19 +351,25 @@ async function fetchRemoteFile(url) {
 
 function Logo() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{
-        width: 26, height: 26, background: T.text, borderRadius: 6,
+        width: 36, height: 36, background: "#0F7B6C", borderRadius: 10,
         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="2.2">
-          <path d="M3 12.5L8 3.5L13 12.5" />
-          <line x1="5.3" y1="9" x2="10.7" y2="9" />
+        <svg width="22" height="22" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2"  y="20" width="7" height="10" rx="2" fill="white" opacity="0.5"/>
+          <rect x="12" y="13" width="7" height="17" rx="2" fill="white" opacity="0.75"/>
+          <rect x="22" y="6"  width="7" height="24" rx="2" fill="white"/>
         </svg>
       </div>
-      <span style={{ fontSize: 14, fontWeight: 600, color: T.text, letterSpacing: "-0.02em" }}>
-        ClearRate
-      </span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <span style={{ fontSize: 18, fontWeight: 700, color: T.text, letterSpacing: "-0.02em", lineHeight: 1 }}>
+          Clear<span style={{ fontWeight: 400 }}>Rate</span>
+        </span>
+        <span style={{ fontSize: 11, color: T.secondary || "#6B7280" }}>
+          Price transparency, simplified
+        </span>
+      </div>
     </div>
   );
 }
@@ -735,7 +741,7 @@ function UploadView({ onReady }) {
             Drop price transparency files here
           </div>
           <div style={{ fontSize: 12, color: T.subtle, marginBottom: 14 }}>
-            CSV and JSON files supported
+            CSV and JSON accepted
           </div>
           <span style={{
             display: "inline-block", padding: "6px 14px", borderRadius: 6,
