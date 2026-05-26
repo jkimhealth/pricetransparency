@@ -6,7 +6,7 @@ A tool for comparing hospital standard charges at the payer, plan, and billing c
 
 ## Overview
 
-This project started as an iterative prototype in claude.ai and is being migrated to a production application. The goal is to let payer contracting leads and healthcare analysts quickly answer questions like:
+ The goal is to let payer contracting leads and healthcare analysts quickly answer questions like:
 
 - What is Aetna HMO/PPO paying vs. Blue Shield HMO/PPO for HCPCS code 10005 at Sutter Davis Hospital?
 - Which payers use a percentage of Medicare vs. a fixed dollar rate for a given DRG?
