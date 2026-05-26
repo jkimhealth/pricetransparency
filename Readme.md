@@ -1,39 +1,135 @@
-# Hospital Price Transparency Explorer
+# ClearRate — Hospital Price Transparency Explorer
 
-A tool for comparing hospital standard charges at the payer, plan, and billing code level — built to the CMS Hospital Price Transparency rule (45 CFR 180.50).
+A browser-based tool for comparing hospital negotiated rates at the payer, plan, and billing code level — built to the CMS Hospital Price Transparency rule (45 CFR 180.50).
 
 ---
 
-## Overview
+## What It Does
 
-This project started as an iterative prototype in claude.ai and is being migrated to a production application. The goal is to let payer contracting leads and healthcare analysts quickly answer questions like:
+Upload one or more CMS machine-readable files (MRFs) and search negotiated rates by billing code. ClearRate is designed for payer contracting leads and healthcare analysts who need to answer questions like:
 
-- What is Aetna HMO/PPO paying vs. Blue Shield HMO/PPO for HCPCS code 10005 at Sutter Davis Hospital?
+- What is Aetna HMO/PPO paying vs. Blue Shield HMO/PPO for HCPCS code 45378 at Stanford vs. UCSF?
 - Which payers use a percentage of Medicare vs. a fixed dollar rate for a given DRG?
 - How does the negotiated rate for a service compare across inpatient vs. outpatient settings?
 
-**Current status:** UI prototype validated. Migrating to production stack (React + Vite + DuckDB).
+No backend required. All parsing and filtering runs in the browser.
 
 ---
 
-## Production Stack
+## Getting Started
 
-| Layer | Technology | Notes |
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. Upload one or more `.csv` or `.json` MRF files, select a billing class and setting, then search by billing code.
+
+**Other commands:**
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start local dev server with hot reload |
+| `npm run build` | Compile production bundle to `dist/` |
+| `npm run preview` | Serve the compiled `dist/` build locally |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 + Vite |
+| Parsing | PapaParse (streaming CSV) |
+| Data | CMS MRF v3.0.0 — CSV and JSON |
+| Styling | Inline styles, no CSS framework |
+
+Everything runs client-side. No server, no database, no build-time data.
+
+---
+
+## Supported File Formats
+
+ClearRate handles all three CMS MRF file shapes found in the wild:
+
+| Format | Example hospitals | Detection |
 |---|---|---|
-| Frontend | React + Vite | Component code carries over 1:1 from the claude.ai artifact |
-| Backend | DuckDB | Reads CSVs directly; analytical queries across multiple hospital files |
-| API | Express or FastAPI | Serves query results to the React frontend |
-| Data | CMS MRF CSVs | One file per hospital, version 3.0.0 format |
+| **Tall CSV** | Sutter Davis, NorthBay | `payer_name` column present — one row per payer/service |
+| **Wide CSV (bracket ID)** | Stanford | Column headers like `standard_charge\|Aetna [10200]\|Aetna\|negotiated_dollar` |
+| **Wide CSV (no bracket)** | UCSF | Column headers like `standard_charge\|Blue Shield\|Hmo/Pos\|negotiated_dollar` |
+| **JSON** | Any CMS MRF v3.0.0 JSON | Detected by file content, not extension |
+
+Format is detected automatically at parse time. Up to 3 hospitals can be loaded simultaneously.
+
+### CSV structure (CMS MRF v3.0.0)
+
+| Row | Content |
+|---|---|
+| Row 1 | Metadata keys (`hospital_name`, `type_2_npi`, `last_updated_on`, …) |
+| Row 2 | Metadata values |
+| Row 3 | Column headers |
+| Rows 4+ | One data row per service × payer/plan combination |
+
+---
+
+## Using the App
+
+### Step 1 — Upload files
+
+Drop one or more `.csv` or `.json` MRF files onto the upload zone, or paste a direct URL. The parser streams large files to avoid memory pressure. Each file shows its hospital name, NPI, last-updated date, and row count once parsed.
+
+### Step 2 — Select billing class and setting
+
+Before searching, choose:
+
+- **Billing class** — Facility (UB-04, institutional claims) or Professional (CMS-1500, physician claims). Rates differ significantly between the two.
+- **Setting** — Inpatient (IP) or Outpatient (OP). This also determines which code types are available to filter on.
+
+### Step 3 — Search by billing code
+
+Enter a billing code in the search bar. All four code columns in the MRF are checked — a match on any one returns the row. Results are filtered to the selected billing class and setting.
+
+**Code type filters by setting:**
+
+| Setting | Available code types |
+|---|---|
+| Inpatient (IP) | MS-DRG, Revenue Code |
+| Outpatient (OP) | HCPCS / CPT, APC, Revenue Code |
+
+Revenue Code appears in both settings: in IP it identifies carve-outs by site of service; in OP it identifies the ancillary department.
+
+### Step 4 — Compare results
+
+**Single hospital:** Results appear as a table sorted by payer name, showing rate, setting, billing class, and methodology.
+
+**Two or three hospitals:** Results appear as a pivot table — payer/plan pairs as rows, hospitals as columns. Each hospital column has a distinct accent color. Rates that don't exist at a given hospital show `—`.
+
+---
+
+## Rate Display
+
+Each negotiated rate falls into exactly one of three types:
+
+| Type | Display | Color |
+|---|---|---|
+| Dollar amount | `$3,456.00` | Green |
+| Percentage of Medicare | `142% of Medicare` | Amber |
+| Algorithm / formula | Full algorithm text, block-formatted | Hospital accent color |
+
+Percentage-based rates are **never converted to dollars**. A contracting lead comparing hospitals needs to see `120% of Medicare vs. 150% of Medicare` directly — resolving to a dollar amount requires a Medicare fee schedule lookup that may not apply uniformly.
+
+---
+
+## Source Citations
+
+Every rate badge shows its source row number directly below it in small monospace text. Hovering that label reveals the exact column header from the CSV (e.g. `standard_charge|Blue Shield|Hmo/Pos|negotiated_dollar`), so any value can be verified against the raw file without guessing.
+
+- **CSV files:** absolute 1-indexed line number (row 4 = first data row)
+- **JSON files:** `item N, payer M` index path within `standard_charge_information`
 
 ---
 
 ## Data Model
-
-Source files follow the CMS machine-readable file (MRF) format. Each file has:
-
-- **Row 1–2:** Hospital metadata (name, NPI, license, attestation)
-- **Row 3:** Column headers
-- **Rows 4+:** One row per service × payer/plan combination
 
 ### Key columns
 
@@ -41,7 +137,7 @@ Source files follow the CMS machine-readable file (MRF) format. Each file has:
 |---|---|
 | `description` | Plain-language service name |
 | `code\|1` – `code\|4` | Billing codes (up to 4 per row, different coding systems) |
-| `code\|1\|type` – `code\|4\|type` | Code type for each code (HCPCS, APC, MS-DRG, RC, NDC, CDM) |
+| `code\|1\|type` – `code\|4\|type` | Code type: HCPCS, APC, MS-DRG, RC, NDC, CDM |
 | `modifiers` | CPT/HCPCS modifier(s), e.g. `25`, `50`, `LT,RT` |
 | `setting` | `inpatient`, `outpatient`, or `both` |
 | `billing_class` | `facility` or `professional` |
@@ -49,56 +145,24 @@ Source files follow the CMS machine-readable file (MRF) format. Each file has:
 | `plan_name` | Specific plan within the payer |
 | `standard_charge\|gross` | Full undiscounted list price |
 | `standard_charge\|discounted_cash` | Self-pay / uninsured cash price |
-| `standard_charge\|negotiated_dollar` | Contracted dollar amount (payer-specific) |
-| `standard_charge\|negotiated_percentage` | Contracted rate as % of a base (e.g. Medicare) |
+| `standard_charge\|negotiated_dollar` | Contracted dollar amount |
+| `standard_charge\|negotiated_percentage` | Contracted rate as % of Medicare |
 | `standard_charge\|negotiated_algorithm` | Formula-based rate reference |
 | `standard_charge\|methodology` | `fee schedule` or `other` |
-| `standard_charge\|min` / `\|max` | Range across all payers for this service |
-| `median_amount` | Median negotiated amount |
-| `10th_percentile` / `90th_percentile` | Distribution stats |
+| `standard_charge\|min` / `\|max` | Rate range across all payers for this service |
 
----
+### Billing code hierarchy
 
-## Billing Code Hierarchy
+Each row can carry up to four codes from different systems. All codes on the same row are cross-references to the same service.
 
-Each row can carry up to four codes from different coding systems. This is a **cross-reference system** — all codes on the same row point to the same service.
-
-### Code types in scope
-
-| Type | Description | Role |
+| Code type | Description | Role |
 |---|---|---|
-| HCPCS / CPT | Standardized clinical procedure code | **Primary** — drives negotiated rates in contracts |
+| HCPCS / CPT | Standardized procedure code | **Primary** — drives negotiated rates |
 | APC | Ambulatory Payment Classification | **Primary** — outpatient grouping |
 | MS-DRG | Medicare Severity DRG | **Primary** — inpatient grouping |
 | RC | Revenue Code (UB-04) | **Context** — site of service; may split rates |
 | NDC | National Drug Code | **Detail** — drug formulation/manufacturer |
-| CDM | Hospital internal charge master ID | **Suppressed** — internal only, not displayed |
-
-### Display hierarchy
-
-```
-HCPCS / APC / MS-DRG          ← primary search and display key
-  └── Revenue Code (RC)        ← shown as context; separate row only when rates differ
-        └── NDC                ← expandable detail for drugs (collapsed by default)
-```
-
-### Multi-code search behavior
-
-When a user searches by code, all four code columns are checked. A match on any column returns the row.
-
----
-
-## Charge Type Display
-
-The three negotiated charge columns are mutually exclusive — a row populates exactly one:
-
-| Column | Display |
-|---|---|
-| `negotiated_dollar` | `$3,456.00` |
-| `negotiated_percentage` | `142% of Medicare` (shown verbatim — enables direct cross-hospital comparison) |
-| `negotiated_algorithm` | `Algorithm (fee schedule)` with a note that the dollar amount is contract-dependent |
-
-Percentage-based rates are **never converted to dollars** in the UI. A contracting lead comparing hospitals needs to see `120% of Medicare vs. 150% of Medicare` directly.
+| CDM | Hospital charge master ID | **Suppressed** — internal only, not shown |
 
 ---
 
@@ -106,10 +170,10 @@ Percentage-based rates are **never converted to dollars** in the UI. A contracti
 
 | Filter | Behavior |
 |---|---|
-| Setting | `inpatient`, `outpatient`, `both` are independent options. Rows where `setting = 'both'` appear **only** when "Both" is explicitly selected — not in the inpatient or outpatient filtered views. |
-| Payer | Filters to rows where `payer_name` matches. Results remain at `payer_name + plan_name` granularity — never aggregated. |
-| Code type | Filters to rows containing at least one code of the selected type across any of the four code columns. |
-| Modifier | Surfaced as a visible field alongside the billing code. Not merged into the code string. |
+| Billing class | Rows with no `billing_class` value are included as a safe fallback |
+| Setting | `inpatient` and `outpatient` are exclusive. Rows tagged `both` appear in either view |
+| Code type | Filters to rows where the searched code matches a column of the selected type |
+| Payer | Results remain at `payer_name + plan_name` granularity — never aggregated |
 
 ---
 
@@ -119,118 +183,56 @@ Percentage-based rates are **never converted to dollars** in the UI. A contracti
 
 When a row has both a Revenue Code and a HCPCS, the negotiated rate is driven by the HCPCS. The RC is a billing classifier, not a pricing key — **except** when the same HCPCS appears with different RCs and different negotiated amounts (a payer carve-out by site of service). In that case, each RC generates a separate row in the UI.
 
-### HCPCS + NDC (drug pricing)
+### Wide-format column parsing
 
-When multiple NDCs exist under the same HCPCS (e.g., brand vs. generic), they are grouped under the HCPCS as a parent row and are expandable on demand.
+Stanford's MRF uses two column subtypes that require different payer/plan assignment:
 
-### CDM codes
+- **Type A (bracket ID):** `standard_charge|Aetna Choice POS [10270]|Aetna|negotiated_dollar` — `m[2]` is the payer, `m[1]` stripped of the ID is the plan
+- **Type B (no bracket):** `standard_charge|Aetna|All Commercial Plans|negotiated_dollar` — `m[1]` is the payer, `m[2]` is the plan
 
-CDM codes are suppressed from all UI display. They are internal hospital identifiers that never appear in payer contracts.
+UCSF uses Type B exclusively. Detection is by presence of a `[\d+]` bracket in `m[1]`.
 
 ### Plan name normalization
 
-Plan name strings vary in capitalization and formatting across payers in the source file. The following normalization is applied at load time:
+Plan name strings vary in capitalization and formatting across hospitals. Normalization is applied at load time:
 
 | Raw values | Normalized |
 |---|---|
-| `HMO/PPO`, `Hmo/Ppo`, `HMO / PPO`, `Hmo / Ppo` | `HMO/PPO` |
-| `Medicare Adv_ HMO / PPO`, `Medicare Adv_ Hmo / Ppo` | `Medicare Advantage HMO/PPO` |
+| `HMO/PPO`, `Hmo/Ppo`, `HMO / PPO` | `HMO/PPO` |
+| `Medicare Adv_ HMO / PPO` | `Medicare Advantage HMO/PPO` |
 | `Medi-Cal` | `Medi-Cal` |
-| `Individual` | `Individual` |
+
+### CDM suppression
+
+CDM codes are internal hospital charge master identifiers. They are stripped from all display — they never appear in payer contracts and add noise to search results.
 
 ---
 
-## Multi-Hospital Support (Planned)
+## Roadmap
 
-The tool is designed to support side-by-side comparison across hospitals. Conventions established for the production build:
-
-- Hospital identity is carried by `hospital_name` and `type_2_npi` from the metadata rows of each file.
-- When multiple files are loaded, results are grouped by hospital.
-- Percentage-based rates are displayed as-is to enable direct cross-hospital comparison without resolving the Medicare base.
-- DuckDB schema: `hospital` is a dimension column, enabling queries like:
-
-```sql
-SELECT hospital_name, payer_name, plan_name, standard_charge_negotiated_dollar
-FROM charges
-WHERE code_1 = '10005'
-  AND setting = 'outpatient'
-ORDER BY hospital_name, payer_name;
-```
-
----
-
-## Migration: Prototype → Production
-
-### What the prototype validated
-
-- Billing code hierarchy (HCPCS → RC → NDC)
-- Charge type display (dollar / percentage / algorithm)
-- Setting filter behavior (`both` opt-in)
-- Payer + plan granularity
-- CDM suppression
-- Multi-code search across all four code columns
-
-### What changes in production
-
-| Prototype (claude.ai artifact) | Production (Claude Code) |
+| Item | Status |
 |---|---|
-| Data loaded in-memory from uploaded CSV | DuckDB reads CSVs directly from disk |
-| ~200–8,800 records in JS memory | Unlimited rows, multi-hospital |
-| No persistence across sessions | Query results via API layer |
-| React component code inline in HTML | React + Vite project (same component code) |
-
-### Migration prompt for Claude Code
-
-When the UI is finalized, paste this into Claude Code:
-
-```
-I have a React price transparency UI built as a claude.ai artifact. 
-Scaffold a Vite + DuckDB project around it.
-
-Schema: CMS MRF v3.0.0 (skip rows 1–2, headers on row 3).
-Key columns: description, code|1–4, code|1|type–code|4|type, modifiers,
-setting, billing_class, payer_name, plan_name,
-standard_charge|gross, standard_charge|discounted_cash,
-standard_charge|negotiated_dollar, standard_charge|negotiated_percentage,
-standard_charge|negotiated_algorithm, standard_charge|methodology,
-standard_charge|min, standard_charge|max, median_amount.
-
-Replace the hardcoded JS data array with a /api/search endpoint 
-that queries DuckDB. Support filters: code (search all 4 code columns),
-setting, payer_name, code type.
-
-CDM codes are suppressed from display.
-Percentage rates are shown verbatim (e.g. "142% of Medicare").
-Setting "both" appears only when explicitly selected.
-Results at payer_name + plan_name granularity.
-```
+| Multi-hospital pivot table | Shipped |
+| Wide-format CSV support (Stanford, UCSF) | Shipped |
+| Billing class + IP/OP workflow | Shipped |
+| Per-value source citations (row + column) | Shipped |
+| Algorithm text rendering | Shipped |
+| DuckDB backend for unlimited file sizes | Planned — v2 |
+| Export filtered results to CSV / Excel | Planned — v2 |
+| Resolve `% of Medicare` to dollar amount via CMS fee schedule | Deferred — v2 |
+| NDC grouping under parent HCPCS | Deferred — v2 |
+| Professional billing alongside facility | Deferred — v2 |
 
 ---
 
-## Open Questions
+## Test Hospitals
 
-| Question | Status |
-|---|---|
-| Should `% of Medicare` rates optionally resolve to a dollar amount using the CMS fee schedule? | Deferred to v2 |
-| When multiple NDCs exist under one HCPCS, group by drug name or list individually? | Deferred — depends on name standardization across hospitals |
-| Add a code type selector to the search bar to prevent false-positive matches? | Revisit after v1 user testing |
-| Export filtered results to CSV / Excel? | Planned for v2 (trivial with DuckDB) |
-| Include professional billing alongside facility billing? | Planned for v2 |
+| Hospital | NPI | Format | Rows | Notes |
+|---|---|---|---|---|
+| Sutter Davis Hospital | 1770532608 | Tall CSV | 41,736 | v3.0.0 reference file |
+| Stanford Health Care | 946174066 | Wide CSV | — | Mix of bracket-ID and plain columns |
+| UCSF Medical Center | 106010776 | Wide CSV | — | Plain columns only |
 
 ---
 
-## Initial Hospital
-
-| Field | Value |
-|---|---|
-| Hospital | Sutter Davis Hospital |
-| NPI | 1770532608 |
-| File updated | 2026-04-01 |
-| Format version | 3.0.0 |
-| Total data rows | 41,736 |
-| Grouped service records | 8,800 |
-| Payers | Aetna, Anthem, Blue Shield, Central Health Plan, Cigna, Health Net, United |
-
----
-
-*This document is the source of truth for design decisions made during the iterative prototype phase. Update it whenever a new assumption is locked in.*
+*This document is the source of truth for design decisions. Update it when assumptions change.*
