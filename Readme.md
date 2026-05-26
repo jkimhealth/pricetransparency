@@ -6,7 +6,11 @@ A browser-based tool for comparing hospital negotiated rates at the payer, plan,
 
 ## What It Does
 
+<<<<<<< HEAD
 Upload one or more CMS machine-readable files (MRFs) and search negotiated rates by billing code. ClearRate is designed for payer contracting leads and healthcare analysts who need to answer questions like:
+=======
+ The goal is to let payer contracting leads and healthcare analysts quickly answer questions like:
+>>>>>>> d53e04b1225617b0687caff83fea84effbfa8674
 
 - What is Aetna HMO/PPO paying vs. Blue Shield HMO/PPO for HCPCS code 45378 at Stanford vs. UCSF?
 - Which payers use a percentage of Medicare vs. a fixed dollar rate for a given DRG?
