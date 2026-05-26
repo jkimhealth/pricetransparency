@@ -690,10 +690,10 @@ function UploadView({ onReady }) {
       }}>
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <h1 style={{ fontSize: 30, fontWeight: 700, color: T.text, letterSpacing: "-0.04em", marginBottom: 10 }}>
-            Hospital Price Lookup
+            Hospital Price Transparency Comparison Tool
           </h1>
           <p style={{ fontSize: 14, color: T.muted, lineHeight: 1.7, maxWidth: 420 }}>
-            Upload CMS machine-readable files to search negotiated rates by payer, plan, and billing code.
+            Upload machine-readable files to search negotiated rates by payer, plan, and billing code.
           </p>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12 }}>
             {[".csv", ".json"].map(ext => (
@@ -704,7 +704,6 @@ function UploadView({ onReady }) {
                 {ext}
               </span>
             ))}
-            <span style={{ fontSize: 11, color: T.subtle, lineHeight: "20px" }}>· CMS MRF v3.0.0</span>
           </div>
         </div>
 
@@ -733,10 +732,10 @@ function UploadView({ onReady }) {
             </svg>
           </div>
           <div style={{ fontSize: 14, fontWeight: 500, color: T.text, marginBottom: 5 }}>
-            Drop CMS price transparency files here
+            Drop price transparency files here
           </div>
           <div style={{ fontSize: 12, color: T.subtle, marginBottom: 14 }}>
-            Accepts CSV and JSON · Multiple hospitals supported
+            CSV and JSON files supported
           </div>
           <span style={{
             display: "inline-block", padding: "6px 14px", borderRadius: 6,
