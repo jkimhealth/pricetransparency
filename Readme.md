@@ -6,11 +6,7 @@ A browser-based tool for comparing hospital negotiated rates at the payer, plan,
 
 ## What It Does
 
-<<<<<<< HEAD
-Upload one or more CMS machine-readable files (MRFs) and search negotiated rates by billing code. ClearRate is designed for payer contracting leads and healthcare analysts who need to answer questions like:
-=======
  The goal is to let payer contracting leads and healthcare analysts quickly answer questions like:
->>>>>>> d53e04b1225617b0687caff83fea84effbfa8674
 
 - What is Aetna HMO/PPO paying vs. Blue Shield HMO/PPO for HCPCS code 45378 at Stanford vs. UCSF?
 - Which payers use a percentage of Medicare vs. a fixed dollar rate for a given DRG?
@@ -100,8 +96,6 @@ Enter a billing code in the search bar. All four code columns in the MRF are che
 | Inpatient (IP) | MS-DRG, Revenue Code |
 | Outpatient (OP) | HCPCS / CPT, APC, Revenue Code |
 
-Revenue Code appears in both settings: in IP it identifies carve-outs by site of service; in OP it identifies the ancillary department.
-
 ### Step 4 — Compare results
 
 **Single hospital:** Results appear as a table sorted by payer name, showing rate, setting, billing class, and methodology.
@@ -120,7 +114,7 @@ Each negotiated rate falls into exactly one of three types:
 | Percentage of Medicare | `142% of Medicare` | Amber |
 | Algorithm / formula | Full algorithm text, block-formatted | Hospital accent color |
 
-Percentage-based rates are **never converted to dollars**. A contracting lead comparing hospitals needs to see `120% of Medicare vs. 150% of Medicare` directly — resolving to a dollar amount requires a Medicare fee schedule lookup that may not apply uniformly.
+Percentage-based rates are **never converted to dollars**. A contracting lead comparing hospitals needs to see `120% of Medicare vs. 150% of Medicare` directly — resolving to a dollar amount requires the Medicare base rate, inclusive of geographical / DSH / IME adjustments.
 
 ---
 
@@ -209,34 +203,3 @@ Plan name strings vary in capitalization and formatting across hospitals. Normal
 ### CDM suppression
 
 CDM codes are internal hospital charge master identifiers. They are stripped from all display — they never appear in payer contracts and add noise to search results.
-
----
-
-## Roadmap
-
-| Item | Status |
-|---|---|
-| Multi-hospital pivot table | Shipped |
-| Wide-format CSV support (Stanford, UCSF) | Shipped |
-| Billing class + IP/OP workflow | Shipped |
-| Per-value source citations (row + column) | Shipped |
-| Algorithm text rendering | Shipped |
-| DuckDB backend for unlimited file sizes | Planned — v2 |
-| Export filtered results to CSV / Excel | Planned — v2 |
-| Resolve `% of Medicare` to dollar amount via CMS fee schedule | Deferred — v2 |
-| NDC grouping under parent HCPCS | Deferred — v2 |
-| Professional billing alongside facility | Deferred — v2 |
-
----
-
-## Test Hospitals
-
-| Hospital | NPI | Format | Rows | Notes |
-|---|---|---|---|---|
-| Sutter Davis Hospital | 1770532608 | Tall CSV | 41,736 | v3.0.0 reference file |
-| Stanford Health Care | 946174066 | Wide CSV | — | Mix of bracket-ID and plain columns |
-| UCSF Medical Center | 106010776 | Wide CSV | — | Plain columns only |
-
----
-
-*This document is the source of truth for design decisions. Update it when assumptions change.*
